@@ -443,8 +443,8 @@ def write_vasp(filename, atoms, label='', direct=False, sort=None,
             ind = np.lexsort(
                 (xyzpos[:, 1], xyzpos[:, 0], xyzpos[:, 2], unssym))
         else:
-            ind = np.argsort(atoms.unssym)
-        symbols = np.array(atoms.unssym)[ind]
+            ind = np.argsort(unssym)
+        symbols = np.array(unssym)[ind]
         coord = coord[ind]
         if atoms.constraints:
             sflags = sflags[ind]
