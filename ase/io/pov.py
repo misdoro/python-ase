@@ -16,21 +16,21 @@ def pa(array):
     return '<% 6.2f, % 6.2f, % 6.2f>' % tuple(array)
 
 
-def pc(array):
+def pc(array,modifier=''):
     """Povray color syntax"""
-    if isinstance(array, str):
-        return 'color ' + array
-    if isinstance(array, float):
-        return 'rgb <%.2f>*3' % array
-    if len(array) == 3:
-        return 'rgb <%.2f, %.2f, %.2f>' % tuple(array)
-    if len(array) == 4: # filter
-        return 'rgbf <%.2f, %.2f, %.2f, %.2f>' % tuple(array)
-    if len(array) == 5: # filter and transmit
-        return 'rgbft <%.2f, %.2f, %.2f, %.2f, %.2f>' % tuple(array)
+    if type(array) == str:
+        return 'color ' + array + modifier
+    elif type(array) == float:
+        ret= 'rgb <%.2f>*3' % array  
+    elif len(array) == 3:
+        ret= 'rgb <%.2f, %.2f, %.2f>' % tuple(array)
+    elif len(array) == 4: # filter
+        ret= 'rgbf <%.2f, %.2f, %.2f, %.2f>' % tuple(array)
+    elif len(array) == 5: # filter and transmit
+        ret= 'rgbft <%.2f, %.2f, %.2f, %.2f, %.2f>' % tuple(array)
+    return ret+modifier
 
-
-def get_bondpairs(atoms, radius=1.1):
+def get_bondpairs(atoms, radius=1.1,zmin=0):
     """Get all pairs of bonding atoms
 
     Return all pairs of atoms which are closer than radius times the
@@ -53,11 +53,14 @@ def get_bondpairs(atoms, radius=1.1):
     cutoffs = radius * covalent_radii[atoms.numbers]
     nl = NeighborList(cutoffs=cutoffs, self_interaction=False)
     nl.update(atoms)
+    coords=atoms.get_positions()
     bondpairs = []
     for a in range(len(atoms)):
+      if coords[a][2]>zmin:
         indices, offsets = nl.get_neighbors(a)
-        bondpairs.extend([(a, a2, offset)
-                          for a2, offset in zip(indices, offsets)])
+        
+        bondpairs.extend([(a, a2, tuple(offset))
+                          for a2, offset in zip(indices, offsets) if coords[a2][2]>zmin])
     return bondpairs
 
 
@@ -78,15 +81,21 @@ class POVRAY(EPS):
                             .7, .7, 3, 3], # width, height, Nlamps_x, Nlamps_y
         'background'     : 'White',        # color
         'textures'       : None, # Length of atoms list of texture names
+        'colormod'       : None, # Length of atoms list of color modifier keywords
         'celllinewidth'  : 0.05, # Radius of the cylinders representing the cell
         'bondlinewidth'  : 0.10, # Radius of the cylinders representing the bonds
+        'Hbondlinewidth' : 0.03, # Radius of the cylinders representing the H bonds
         'bondatoms'      : [],   # [[atom1, atom2], ... ] pairs of bonding atoms
+        'Hbondatoms'     : [],   # Same as for bonds, hydrogen bonds
+        'tetrahedrons'   : [],   # Same as for bonds, O-O links
         'exportconstraints' : False}  # honour FixAtom requests and mark relevant atoms?
 
     def __init__(self, atoms, scale=1.0, **parameters):
         for k, v in self.default_settings.items():
             setattr(self, k, parameters.pop(k, v))
         EPS.__init__(self, atoms, scale=scale, **parameters)
+        if self.colormod==None:
+        	self.colormod=(' ')*len(atoms)
         constr = atoms.constraints
         self.constrainatoms = []
         for c in constr:
@@ -202,8 +211,11 @@ class POVRAY(EPS):
           'diffuse .3 '
           'specular 1. '
           'roughness .001}\n')
+	w('#declare hbond = pigment {Cyan}')
+	w('#declare tetrah = pigment {Black}')
         w('#declare Rcell = %.3f;\n' % self.celllinewidth)
         w('#declare Rbond = %.3f;\n' % self.bondlinewidth)
+        w('#declare RHbond = %.3f;\n' % self.Hbondlinewidth)
         w('\n')
         w('#macro atom(LOC, R, COL, FIN)\n')
         w('  sphere{LOC, R texture{pigment{COL} finish{FIN}}}\n')
@@ -237,8 +249,9 @@ class POVRAY(EPS):
             tex = 'ase3'
             if self.textures is not None:
                 tex = self.textures[a]
+            mod=self.colormod[a]
             w('atom(%s, %.2f, %s, %s) // #%i \n' % (
-                pa(loc), dia / 2., pc(color), tex, a))
+                pa(loc), dia / 2., pc(color,mod), tex, a))
             a += 1
 
         # Draw atom bonds
@@ -257,9 +270,49 @@ class POVRAY(EPS):
             else:
                 texa = texb = 'ase3'
             w('cylinder {%s, %s, Rbond texture{pigment {%s} finish{%s}}}\n' % (
-                pa(self.X[a]), pa(mida), pc(self.colors[a]), texa))
+                pa(self.X[a]), pa(mida), pc(self.colors[a],self.colormod[a]), texa))
             w('cylinder {%s, %s, Rbond texture{pigment {%s} finish{%s}}}\n' % (
-                pa(self.X[b]), pa(midb), pc(self.colors[b]), texb))
+                pa(self.X[b]), pa(midb), pc(self.colors[b],self.colormod[b]), texb))
+	# Draw hydrogen bonds
+        for pair in self.Hbondatoms:
+            if len(pair) == 2:
+                a, b = pair
+                offset = (0, 0, 0)
+            else:
+                a, b, offset = pair
+            if (self.numbers[a]==1 or self.numbers[b]==1) and (self.numbers[a] in (7,8) or self.numbers[b] in (7,8)):
+                R = np.dot(offset, self.A)
+                mida = 0.5 * (self.X[a] + self.X[b] + R)
+                midb = 0.5 * (self.X[a] + self.X[b] - R)
+                if self.textures is not None:
+                   texa = self.textures[a]
+                   texb = self.textures[b]
+                else:
+                   texa = texb = 'ase3'
+                w('cylinder {%s, %s, RHbond texture{hbond}}\n' % (
+                   pa(self.X[a]), pa(mida)))
+                w('cylinder {%s, %s, RHbond texture{hbond}}\n' % (
+                   pa(self.X[b]), pa(midb)))
+	# Draw tetrahedrons
+        for pair in self.tetrahedrons:
+            if len(pair) == 2:
+                a, b = pair
+                offset = (0, 0, 0)
+            else:
+                a, b, offset = pair
+            if (self.numbers[a]==8 and self.numbers[b]==8):
+                R = np.dot(offset, self.A)
+                mida = 0.5 * (self.X[a] + self.X[b] + R)
+                midb = 0.5 * (self.X[a] + self.X[b] - R)
+                if self.textures is not None:
+                   texa = self.textures[a]
+                   texb = self.textures[b]
+                else:
+                   texa = texb = 'ase3'
+                w('cylinder {%s, %s, RHbond texture{tetrah}}\n' % (
+                   pa(self.X[a]), pa(mida)))
+                w('cylinder {%s, %s, RHbond texture{tetrah}}\n' % (
+                   pa(self.X[b]), pa(midb)))
             
         # Draw constraints if requested
         if self.exportconstraints:
