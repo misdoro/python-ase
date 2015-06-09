@@ -437,12 +437,14 @@ def write_vasp(filename, atoms, label='', direct=False, sort=None,
                 sflags[constr.index] = [True, True, True]
 
     if sort:
-	xyzpos=atoms.get_positions()
-	if (sort=="zsort"):
-	   ind = np.lexsort((xyzpos[:,1],xyzpos[:,0],xyzpos[:,2],atoms.get_chemical_symbols()))
-	else:
-	   ind = np.argsort(atoms.get_chemical_symbols())
-        symbols = np.array(atoms.get_chemical_symbols())[ind]
+        xyzpos = atoms.get_positions()
+        unssym = atoms.get_chemical_symbols()
+        if (sort == 'zsort'):
+            ind = np.lexsort(
+                (xyzpos[:, 1], xyzpos[:, 0], xyzpos[:, 2], unssym))
+        else:
+            ind = np.argsort(atoms.unssym)
+        symbols = np.array(atoms.unssym)[ind]
         coord = coord[ind]
         if atoms.constraints:
             sflags = sflags[ind]
