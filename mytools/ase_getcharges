@@ -1,0 +1,83 @@
+#!/usr/bin/python2
+from ase import Atom
+from ase.io import read
+from ase.io.vasp import read_vasp
+from ase.visualize import view
+from sys import argv,stdout
+from optparse import OptionParser
+import vasputil.supercell as vuscell
+import numpy as np
+import collections
+
+#Read bassin charges as determined by chem_pop tool
+chgpop=open("CHGCAR_pop.dat")
+rows = [x.split() for x in chgpop.readlines()]
+charges=[float(l[4]) for l in rows if len(l)>0]
+
+zval={'H':1,'O':6,'Na':7}
+zval_H=1
+zval_Na=7
+zval_O=6
+
+struct=read_vasp("CONTCAR")
+symbols=struct.get_chemical_symbols()
+adsats=[i for i,v in enumerate(symbols) if v!='O' and v!='H']
+virtads=0
+
+if (len(adsats)==0):
+	stdout.write("No adsorbate found!\n")
+	if (len(argv)>=3):
+		pos=[float(x) for x in argv[2].split(":")]
+		stdout.write("Adding virtual adsorbate at [%.3f,%.3f,%.3f]\n"%(pos[0],pos[1],pos[2]))
+		struct.append(Atom(argv[1],pos));
+		symbols=struct.get_chemical_symbols()
+		adsats=[i for i,v in enumerate(symbols) if v!='O' and v!='H']
+		virtads=1
+	else:
+		stdout.write("Specify the virtual adsorbate name and position\n\
+			as the second and third parameters\n\
+			get_charges [At x.xxx,y.yyy,z.zzz]\n")
+		exit(1)
+
+pos=struct.get_positions()
+natoms=len(symbols)
+
+#Find water molecules
+oatoms=[i for i,v in enumerate(symbols) if v=='O']
+waters=[]
+oadst=[]
+for i in oatoms:
+	ohd=[]
+	for j in range(natoms):
+		dst=vuscell.atoms_distance(struct,i,j)
+		#stdout.write("i:%d,j:%d,dst:%f"%(i,j,dst))
+		ohd.append(dst)
+	dst=np.argsort(ohd)
+	#stdout.write("for oxygen %d hydrogens are %d and %d (dist %f and %f)\n"%(i,dst[1],dst[2],ohd[dst[1]],ohd[dst[2]]))
+	h2o=[i,dst[1],dst[2]]
+	waters.append(h2o);
+	
+	oadsti=[]
+	for j in adsats:
+		oadsti.append(vuscell.atoms_distance(struct,i,j))
+	oadst.append(oadsti)
+
+oadsti=np.argsort(oadst,0)
+
+
+#Find distances from oxygen to the adsorbate
+stdout.write("| oad   | O_i |  O_z  |  CHG  |\n")
+for [i] in oadsti:
+#for [o,h1,h2] in waters:
+	[o,h1,h2]=waters[i]
+	wc=2*zval['H']+zval['O']-charges[o]-charges[h1]-charges[h2]
+	stdout.write("| %.3f | %3d | %.3f | %+4.2f |\n"%(oadst[i][0],o,pos[o][2],wc))
+	
+if (not virtads):
+	for i in adsats:
+		sym=symbols[i]
+		stdout.write("%s Adsorbate charge: %+4.2f\n"%(sym,zval[sym]-charges[i]))
+view(struct)
+
+attr=read("ELFCAR_atHe.xyz")
+view(attr)

@@ -1,0 +1,38 @@
+#!/usr/bin/python2
+from ase.io.vasp import read_vasp,write_vasp
+from ase.visualize import view
+from os import path
+from sys import argv,stdout
+
+if (len(argv)>1):
+	filename=argv[1]
+	outfile=path.join(path.split(filename)[0],"adsonly.POSCAR")
+else:
+	filename="CONTCAR"
+	outfile="adsorbate.POSCAR"
+	stdout.write("Usage: cut_adsorbate struct.POSCAR zcoord\n zcoord<0: cut above |zcoord|\n")
+
+
+slab=read_vasp(filename)
+
+if (len(argv)>2):
+	zmin=float(argv[2])
+else:
+	view(slab)
+	zmin=float(input("enter the max Z of the surface"))
+
+slab.set_constraint()
+
+#del slab[[atom.index for atom in slab if atom.symbol == "O"]]
+#del slab[[atom.index for atom in slab if atom.symbol == "H"]]
+stdout.write("%d"%(zmin))
+if (zmin>0):
+	del slab[[atom.index for atom in slab if atom.z <= zmin]]
+else:
+	del slab[[atom.index for atom in slab if atom.z > -zmin]]
+
+if (len(slab.get_positions())>0):
+	view(slab)
+	write_vasp(outfile,slab,label='adsorbate',direct=True,sort="zsort",vasp5=True)
+else:
+	stdout.write("File %s has no adsorbates!\n"%(filename))

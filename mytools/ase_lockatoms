@@ -1,0 +1,17 @@
+#!/usr/bin/python2
+from ase.io.vasp import read_vasp,write_vasp
+from ase.visualize import view
+from ase.constraints import FixAtoms
+from numpy import array
+from ase import Atom
+from sys import argv,stdout
+
+if (len(argv)!=3):
+	stdout.write("Usage: ase_lockatoms struct zmax\n");
+else:
+	filename=argv[1];
+	zmax=float(argv[2]);
+	struct=read_vasp(filename);
+	struct.set_constraint(FixAtoms(indices=[atom.index for atom in struct if atom.z<=zmax+0.0001]))
+	view(struct);
+	write_vasp("freeze"+filename,struct,label='slab',direct=True,sort="zsort",vasp5=True)

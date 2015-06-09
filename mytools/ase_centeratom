@@ -1,0 +1,75 @@
+#!/usr/bin/python2
+from ase.io.vasp import read_vasp,write_vasp
+from ase.visualize import view
+from ase.constraints import FixAtoms
+from numpy import array
+from ase import Atom
+from sys import argv,stdout
+
+def findMaxRestrictZ(struct):
+	zmax=0
+	positions=struct.get_positions()
+	for i in struct.constraints[0].todict()['indices']:
+		zmax=max(positions[i][2],zmax)
+		#stdout.write("i %d, zmax %f \n"%(i,zmax));
+	return zmax;
+
+def align(struct):
+	zrest=findMaxRestrictZ(struct)
+	struct.set_constraint()
+	struct.set_positions(struct.get_positions(wrap=True))
+	struct.set_constraint(FixAtoms(indices=[atom.index for atom in struct if atom.z<=zrest+0.0001]))
+
+def translate(struct,dx,dy):
+	struct.translate([dx,dy,0])
+	align(struct)
+
+
+if (len(argv)!=2):
+	stdout.write("Usage: centeratom struct \n");
+else:
+	filename=argv[1]
+	struct=read_vasp(filename);
+	view(struct);
+
+	centeratom=int(input("Please type in an index of the atom to center on\n"))
+	atompos=struct.get_positions()[centeratom]
+	
+	#translate that the site 5 becomes in the middle of the cell
+	dx=0.5*struct.cell[0,0]-atompos[0]
+	dy=0.5*struct.cell[1,1]-atompos[1]
+	
+	translate(struct,dx,dy)
+	#struct.translate([dx,dy,0])
+	#struct.set_constraint()
+	#struct.set_positions(struct.get_positions(wrap=True))
+	#struct.set_constraint(FixAtoms(indices=[atom.index for atom in struct if atom.z<3.5]))
+
+	view(struct);
+	move=array(input("Translate additionally?"))
+	if (len(move)==2):
+		translate(struct,move[0],move[1])
+	elif (len(move)==3):
+		struct.translate(move)
+		align(struct)
+	view(struct);
+	write_vasp(filename+"tr",struct,label='hexa5Na',direct=True,sort="zsort",vasp5=True)
+	
+	#Add the adsorbate in the proper place:
+	#Old Underlying oxygen: [4.413,0.868,12.578]A
+	#Na atom:[4.367,1.652,15.113]A
+	#New Underlying oxygen: [5.030,3.170,4.816]A
+
+	#oldox=array([4.413,0.868,12.578])
+	#Naat=array([4.367,1.652,15.113])
+	#newox=array([5.030,3.170,4.816])
+	#newpos=Naat-oldox+newox
+
+	#struct.append(Atom("Na",newpos))
+
+	#Review and write the final structure
+	#view(struct)
+	#write_vasp("Naasite5ctr.POSCAR",struct,label='hexa5Na',direct=True,sort="zsort",vasp5=True)
+
+
+	

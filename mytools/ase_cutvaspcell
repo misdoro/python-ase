@@ -1,0 +1,46 @@
+#!/usr/bin/python2
+from ase.io import read,write
+from ase.io.vasp import read_vasp,write_vasp
+from sys import argv
+from ase.visualize import view
+import ase.io
+import os
+filename=argv[1]
+
+
+fname, fExtension = os.path.splitext(filename);
+fname+=".xyz"
+print fname
+
+zmin=7.5
+
+struct=read(filename,format="vasp");
+#cell=struct*(3,3,1)
+cell=struct
+cx=cell.cell[0,0]
+cy=cell.cell[1,1]
+cell.set_constraint()
+
+wminx=6.4
+wmaxx=20.5
+wminx=8.7
+#wminx=4.3
+wmaxx=18.4
+#wmaxx=16.2
+wminy=3.7
+wmaxy=15
+#wminy=7.4
+#wmaxy=18.3
+
+#Remove unnecessary sub-hydrogens
+del cell[[atom.index for atom in cell if atom.z<zmin]]
+#Remove extra adsorbates
+del cell[[atom.index for atom in cell if (atom.symbol!="H" and atom.symbol!="O") and (atom.x<cx/3 or atom.x>2*cx/3 or atom.y<cy/3 or atom.y>2*cy/3)]]
+view(cell)
+#Remove excessive water
+del cell[[atom.index for atom in cell if (atom.x<wminx or atom.x>wmaxx or atom.y<wminy or atom.y>wmaxy)]]
+
+
+ase.io.write(fname,cell,format="xyz")
+
+view(cell)

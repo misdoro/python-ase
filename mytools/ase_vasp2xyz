@@ -1,0 +1,19 @@
+#!/usr/bin/python2
+
+import os 
+import sys
+filename=sys.argv[1]
+
+import ase.io
+
+print "filename"+filename
+
+cell=ase.io.read(filename,format="vasp")
+
+
+
+fname, fExtension = os.path.splitext(filename);
+fname+=".xyz"
+print fname
+
+ase.io.write(fname,cell,format="xyz")

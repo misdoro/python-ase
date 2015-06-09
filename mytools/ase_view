@@ -1,0 +1,11 @@
+#!/usr/bin/python2
+from ase.io import read,write
+from ase.io.vasp import read_vasp,write_vasp
+from sys import argv
+from ase.visualize import view
+import ase.io
+import os
+
+filename=argv[1]
+struct=read(filename,format="vasp");
+view(struct)

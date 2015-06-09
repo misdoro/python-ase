@@ -1,0 +1,13 @@
+#!/usr/bin/python2
+from ase.io import read,write
+from sys import argv
+import ase.io
+import os
+filename=argv[1]
+
+struct=read(filename,format="aims");
+fname, fExtension = os.path.splitext(filename);
+fname+=".xyz"
+print fname
+
+ase.io.write(fname,struct)

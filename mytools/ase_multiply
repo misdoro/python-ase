@@ -1,0 +1,21 @@
+#!/usr/bin/python2
+from ase.io.vasp import read_vasp,write_vasp
+from ase.constraints import FixAtoms
+from ase.visualize import view
+from ase.lattice.surface import add_adsorbate
+from sys import argv,stdout
+
+if (len(argv)!=5):
+	stdout.write("usage: ase_multiply system xm ym zm\n")
+else:
+
+	infile=argv[1]
+	mul_a=int(argv[2])
+	mul_b=int(argv[3])
+	mul_c=int(argv[4])
+	
+	struct=read_vasp(infile)*(mul_a,mul_b,mul_c)
+
+	view(struct);
+	write_vasp(infile+"big",struct,direct=True,sort="zsort",vasp5=True)
+

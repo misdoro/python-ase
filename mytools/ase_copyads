@@ -1,0 +1,33 @@
+#!/usr/bin/python2
+from ase.io.vasp import read_vasp,write_vasp
+from ase.constraints import FixAtoms
+from ase.visualize import view
+from ase.lattice.surface import add_adsorbate
+from sys import argv,stdout
+
+if (len(argv)!=5):
+	stdout.write("usage: copy_adsorbate with_adsorbate.CONTCAR zmin(ads) slab.CONTCAR outfile.POSCAR\n")
+else:
+
+	infile=argv[1]
+	ads_z=float(argv[2])
+	slabfile=argv[3]
+	outfile=argv[4]
+	
+	slab=read_vasp(slabfile)
+
+	instruct=read_vasp(infile)
+
+	adsorbate=[atom for atom in instruct if atom.z>=ads_z]
+	#ycell=instruct.cell[1,1]
+	a=1.425
+	b=3.2
+	for atom in adsorbate:
+		atom.z+=1;
+		slab.append(atom);
+	
+	
+	
+	view(slab);
+	write_vasp(outfile,slab,label='slab_Ih_ads',direct=True,sort="zsort",vasp5=True)
+

@@ -1,0 +1,18 @@
+#!/usr/bin/python2
+from ase.io.vasp import read_vasp,write_vasp
+from sys import argv,stdout
+
+if (len(argv) ==3):
+	zlen=float(argv[2]);
+	outfile=argv[1]+".zlim"
+	struct=read_vasp(argv[1])
+
+	struct.cell[2,2]=zlen;
+
+
+	stdout.write("Have set the Z length of volume cell to %f and writing to %s\n"%(zlen,outfile));
+
+	write_vasp(outfile,struct,label='cell_zlim',direct=True,sort="zsort",vasp5=True)
+else:
+	stdout.write("Usage: cellsetz.py struct newzval %d\n"%(len(argv)));
+

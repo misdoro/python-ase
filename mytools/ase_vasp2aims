@@ -1,0 +1,9 @@
+#!/usr/bin/python2
+from ase.io.vasp import read_vasp,write_vasp
+from ase.io import write
+from sys import argv
+
+filename=argv[1]
+struct=read_vasp(filename);
+filenameo=filename+"geometry.in"
+write(filenameo,struct,format="aims")

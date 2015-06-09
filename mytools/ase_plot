@@ -1,0 +1,25 @@
+#!/usr/bin/python2
+from ase.io import read,write
+from sys import argv,stdout
+from ase.visualize import view
+import ase.io
+import os
+
+stdout.write("ase_plot filename rotate format\n");
+
+filename=argv[1]
+struct=read(filename,format="vasp");
+
+if (len(argv)>2):
+  rotate=argv[2]
+else:
+  rotate=''
+
+if (len(argv)>3):
+  fmt=argv[3] 
+else:
+  fmt='png'
+
+#view(struct)
+write(filename+"."+fmt,struct,format=fmt,radii=0.4,scale=300,rotation=rotate,show_unit_cell=2);
+stdout.write("")
