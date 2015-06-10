@@ -226,6 +226,13 @@ class POVRAY(EPS):
         w('      translate LOC}\n')
         w('#end\n')
         w('\n')
+        #w('fog {'
+            #' distance 2'
+            #' color rgbt<1, 1, 1, .9>'
+            #' fog_type 2'
+            #' fog_offset 100'
+            #' fog_alt 200'
+            #'}\n')
         
         z0 = self.X[:, 2].max()
         self.X -= (self.w / 2, self.h / 2, z0)
@@ -261,18 +268,23 @@ class POVRAY(EPS):
                 offset = (0, 0, 0)
             else:
                 a, b, offset = pair
+            if a == b:
+                continue
             R = np.dot(offset, self.A)
             mida = 0.5 * (self.X[a] + self.X[b] + R)
             midb = 0.5 * (self.X[a] + self.X[b] - R)
+            
             if self.textures is not None:
                 texa = self.textures[a]
                 texb = self.textures[b]
             else:
                 texa = texb = 'ase3'
-            w('cylinder {%s, %s, Rbond texture{pigment {%s} finish{%s}}}\n' % (
-                pa(self.X[a]), pa(mida), pc(self.colors[a],self.colormod[a]), texa))
-            w('cylinder {%s, %s, Rbond texture{pigment {%s} finish{%s}}}\n' % (
-                pa(self.X[b]), pa(midb), pc(self.colors[b],self.colormod[b]), texb))
+            if (abs(self.X[a]-mida)>=0.01).any():
+                w('cylinder {%s, %s, Rbond texture{pigment {%s} finish{%s}}}\n' % (
+                    pa(self.X[a]), pa(mida), pc(self.colors[a],self.colormod[a]), texa))
+            if (abs(self.X[b]-midb)>=0.01).any():
+                w('cylinder {%s, %s, Rbond texture{pigment {%s} finish{%s}}}\n' % (
+                    pa(self.X[b]), pa(midb), pc(self.colors[b],self.colormod[b]), texb))
 	# Draw hydrogen bonds
         for pair in self.Hbondatoms:
             if len(pair) == 2:
