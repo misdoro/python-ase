@@ -1,0 +1,137 @@
+#!/usr/bin/python2
+from ase.io.vasp import read_vasp
+from sys import argv
+from sys import stdout
+from optparse import OptionParser
+import vasputil.supercell as vuscell
+import numpy as np
+import collections
+from math import pi
+
+usage = """%prog [options] CONTCAR"""
+
+parser = OptionParser(usage)
+parser.add_option("-n", "--numneigh", dest="nn", \
+        help="Number of neighbor atoms to print for each type.")
+parser.add_option("-a", "--slabatom", dest="sa", \
+        help="Print only distances to this type of slab atoms.")
+parser.add_option("-s", "--short", dest="short", \
+        help="Print filename and distance from adsorbate atom to slab.")
+(options, args) = parser.parse_args()
+
+
+def findTopLayerZ(struct,symbol,ztoplim):
+	ztol=2
+	symbols=struct.get_chemical_symbols()
+	coords=struct.get_positions()
+	symidx=[i for i,v in enumerate(symbols) if v ==symbol]
+	sympos=[coords[idx]for idx in symidx]
+	#Filter sympos to be below adsorbate atom
+	sympos=[sympos[i] for i in range(len(sympos)) if sympos[i][2]<=ztoplim-ztol]
+	if (len(sympos)<1):
+		return 0
+	zmax=np.nanargmax( sympos,axis=0)[2]
+	zmaxv=sympos[zmax][2]
+	
+	tloidx=[i for i in range(len(sympos)) if sympos[i][2]>=(zmaxv-ztol) and sympos[i][2]<=ztoplim]
+	zvals=[sympos[idx][2] for idx in tloidx]
+	if (len(zvals)>1):
+		ozmean=np.average(zvals);
+	else:
+		ozmean=0;
+	return ozmean
+
+def findAdsorbateZ(struct):
+    ztol=1.1;
+    rtol=4;
+    symbols=struct.get_chemical_symbols()
+    coords=struct.get_positions()
+    csort=np.argsort(coords[:,2])
+    adsatoms=[]
+    if symbols[csort[-1]]!='H':
+        adsatoms.append(csort[-1])
+    for i in range(10):
+        idx=csort[-2-i]
+        previdx=csort[-1-i]
+        stdout.write("%s z=%f dnext=%f\n"%(symbols[idx],coords[idx][2],struct.get_distance(idx,previdx)))
+        if struct.get_distance(idx,previdx)<rtol and abs(coords[previdx][2]-coords[idx][2])<ztol:
+          if symbols[idx]=='H':
+            continue #ignore H atoms
+          adsatoms.append(idx)
+        else:
+            return adsatoms
+    return adsatoms
+    
+
+if (options.nn):
+	numneigh=int(options.nn)
+else:
+	numneigh=5
+
+
+filename=args[0]
+
+#Read the structure
+struct=read_vasp(filename)
+
+
+#Find our adsorbate
+#aindex=struct.get_chemical_symbols().index(atomname)
+#azpos=struct.get_positions()[aindex][2]
+adsats=findAdsorbateZ(struct)
+angle=struct.get_angle(adsats)
+stdout.write("angle: %f\n"%(angle*180/pi))
+#exit(0)
+
+#if (options.short):
+	#stdout.write("%s;"%filename)
+	#adformat="z(%s); (%f); %f; A"
+#else:
+	#adformat="Height above the avg(z(%s)) (%f): %f A\n"
+
+##Print distance to slab
+#symbol='O'
+#szmean=findTopLayerZ(struct,symbol,azpos)
+#if (szmean>0):
+	#stdout.write(adformat%(symbol,szmean,(azpos-szmean)))
+
+#symbol='C'
+#szmean=findTopLayerZ(struct,symbol,azpos)
+#if (szmean>0):
+	#stdout.write(adformat%(symbol,szmean,(azpos-szmean)))
+
+#symbol='Si'
+#szmean=findTopLayerZ(struct,symbol,azpos)
+#if (szmean>0):
+	#stdout.write(adformat%(symbol,szmean,(azpos-szmean)))
+	
+#if(options.short):
+	#stdout.write("\n")
+	#exit(0);
+
+##Find other atoms distances, sort by symbol, distance
+#distances=[]
+#symbols=struct.get_chemical_symbols()
+#coords=struct.get_positions()
+
+#natoms=len(symbols)
+#asyms=set(symbols)
+
+#asord=dict()
+
+#for i in range(natoms):
+	#distances.append(vuscell.atoms_distance(struct,aindex,i))
+	
+#stdout.write("Distances to closest SLAB atoms by atom:\n")
+#for atom in asyms:
+	#thisdst=[distances[idx] for idx in [i for i,v in enumerate(symbols) if v ==atom]]
+	#dst=np.argsort(thisdst)
+	#stdout.write("For atom %s: %i\n"%(atom,len(dst)))
+	
+	#for i in range(min(numneigh,len(dst))):
+		#stdout.write("distance %f\n"%(thisdst[dst[i]]))
+	
+#ind = np.argsort(distances)
+#stdout.write("Distances to closest SLAB atoms:\n")
+#for i in range(numneigh):
+	#stdout.write("distance %f to %s\n"%(distances[ind[i]],symbols[ind[i]]))
