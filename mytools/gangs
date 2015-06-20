@@ -1,0 +1,17 @@
+#!/bin/bash
+
+for DIRS in $@
+do
+#	echo "========================="
+	STRUCT=$DIRS
+	if [ -f $STRUCT/CONTCAR ];  then STRUCT=$STRUCT/CONTCAR; fi
+	if [ -f $STRUCT/POSCAR ];  then STRUCT=$STRUCT/POSCAR; fi
+	#AS=`echo $DIRS|awk -F "_" '{print $3}'`
+	AS=$DIRS
+	#NST=`grep "free  energy" $OUTCAR | wc -l`	
+	#FE=`grep "free  energy" $OUTCAR | tail -n1 | awk -F " " '{print $5}' | sed -e 's/\./,/g'`
+	ANGS=`ase_getadsangle $STRUCT`
+	#echo $NST" steps"
+	#echo "final energy:"`grep "free  energy" $OUTCAR | tail -n1 | sed -e 's/\./,/g'`
+	echo "$AS; $ANGS"
+done

@@ -1,0 +1,15 @@
+#!/bin/bash
+
+for DIRS in $@
+do
+#	echo "========================="
+	OUTCAR=$DIRS
+	if [ -d $OUTCAR ];  then OUTCAR=$OUTCAR/OUTCAR; fi
+	#AS=`echo $DIRS|awk -F "_" '{print $3}'`
+	AS=$DIRS
+	NST=`grep "free  energy" $OUTCAR | wc -l`	
+	FE=`grep "free  energy" $OUTCAR | tail -n1 | awk -F " " '{print $5}' | sed -e 's/\./,/g'`
+	#echo $NST" steps"
+	#echo "final energy:"`grep "free  energy" $OUTCAR | tail -n1 | sed -e 's/\./,/g'`
+	echo "$AS; $NST; $FE"
+done
