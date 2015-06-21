@@ -12,7 +12,7 @@ usage = """%prog [options] CONTCAR"""
 
 
 def findAdsorbateZ(struct):
-    ztol=1.1;
+    ztol=2;
     rtol=4;
     symbols=struct.get_chemical_symbols()
     coords=struct.get_positions()
@@ -29,6 +29,8 @@ def findAdsorbateZ(struct):
             continue #ignore H atoms
           adsatoms.append(idx)
         else:
+            return adsatoms
+        if len(adsatoms)==3:
             return adsatoms
     return adsatoms
 
