@@ -7,6 +7,8 @@ import os
 
 import numpy as np
 
+from collections import Counter
+
 from ase.io.eps import EPS
 from ase.data import chemical_symbols
 from ase.constraints import FixAtoms
@@ -63,6 +65,23 @@ def get_bondpairs(atoms, radius=1.1,zmin=0):
                           for a2, offset in zip(indices, offsets) if coords[a2][2]>zmin])
     return bondpairs
 
+
+def filter_hbonds(hbonds,covbonds):
+    #Filter hydrogen bonds to exclude atoms linked by covalent bonds through another one:
+    #fix CH3XX case
+    filteredh=[]
+    for bond in hbonds:
+        a,b,offs=bond
+        aacovpar=Counter([cbond[0] for cbond in covbonds if cbond[1]==a])
+        bacovpar=Counter([cbond[1] for cbond in covbonds if cbond[0]==a])
+        abcovpar=Counter([cbond[0] for cbond in covbonds if cbond[1]==b])
+        bbcovpar=Counter([cbond[1] for cbond in covbonds if cbond[0]==b])
+        tot=aacovpar+bacovpar+abcovpar+bbcovpar
+
+        mce,mcc=tot.most_common(1)[0]
+        if (mcc==1):
+            filteredh.extend([bond])
+    return filteredh
 
 class POVRAY(EPS):
     default_settings = {
@@ -294,14 +313,17 @@ class POVRAY(EPS):
                 offset = (0, 0, 0)
             else:
                 a, b, offset = pair
-            if (self.numbers[a]==1 or self.numbers[b]==1) and (self.numbers[a] in (7,8) or self.numbers[b] in (7,8)):
+            if ((self.numbers[a]==1 
+                 or self.numbers[b]==1) 
+                and (self.numbers[a] in (6,7,8) 
+                     or self.numbers[b] in (6,7,8))):
                 R = np.dot(offset, self.A)
                 mida = 0.5 * (self.X[a] + self.X[b] + R)
                 midb = 0.5 * (self.X[a] + self.X[b] - R)
                 vab1=(mida-self.X[a])
                 vab2=(midb-self.X[b])
                 
-                tpa=3#Trace per angstrom
+                tpa=3#Dashes per angstrom
                 bondlen=np.linalg.norm(vab1)
                 numpts=int(round(bondlen*tpa))
                 dvab1=vab1/(2*numpts)
