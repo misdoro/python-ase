@@ -211,7 +211,7 @@ class POVRAY(EPS):
           'diffuse .3 '
           'specular 1. '
           'roughness .001}\n')
-	w('#declare hbond = pigment {Cyan}')
+	w('#declare hbond = pigment {Black}')
 	w('#declare tetrah = pigment {Black}')
         w('#declare Rcell = %.3f;\n' % self.celllinewidth)
         w('#declare Rbond = %.3f;\n' % self.bondlinewidth)
@@ -285,6 +285,8 @@ class POVRAY(EPS):
             if (abs(self.X[b]-midb)>=0.01).any():
                 w('cylinder {%s, %s, Rbond texture{pigment {%s} finish{%s}}}\n' % (
                     pa(self.X[b]), pa(midb), pc(self.colors[b],self.colormod[b]), texb))
+                
+                
 	# Draw hydrogen bonds
         for pair in self.Hbondatoms:
             if len(pair) == 2:
@@ -296,15 +298,25 @@ class POVRAY(EPS):
                 R = np.dot(offset, self.A)
                 mida = 0.5 * (self.X[a] + self.X[b] + R)
                 midb = 0.5 * (self.X[a] + self.X[b] - R)
-                if self.textures is not None:
-                   texa = self.textures[a]
-                   texb = self.textures[b]
-                else:
-                   texa = texb = 'ase3'
-                w('cylinder {%s, %s, RHbond texture{hbond}}\n' % (
-                   pa(self.X[a]), pa(mida)))
-                w('cylinder {%s, %s, RHbond texture{hbond}}\n' % (
-                   pa(self.X[b]), pa(midb)))
+                vab1=(mida-self.X[a])
+                vab2=(midb-self.X[b])
+                
+                tpa=3#Trace per angstrom
+                bondlen=np.linalg.norm(vab1)
+                numpts=int(round(bondlen*tpa))
+                dvab1=vab1/(2*numpts)
+                dvab2=vab2/(2*numpts)
+                for i in range(numpts):
+                    pta=self.X[a]+dvab1*2*i
+                    ptb=self.X[a]+dvab1*(2*i+1)
+                    ptc=midb-dvab2*2*i
+                    ptd=midb-dvab2*(2*i+1)
+                    w('cylinder {%s, %s, RHbond texture{hbond}}\n' % (
+                        pa(pta), pa(ptb)))
+                    w('cylinder {%s, %s, RHbond texture{hbond}}\n' % (
+                        pa(ptc), pa(ptd)))
+                    
+                    
 	# Draw tetrahedrons
         for pair in self.tetrahedrons:
             if len(pair) == 2:
@@ -316,11 +328,7 @@ class POVRAY(EPS):
                 R = np.dot(offset, self.A)
                 mida = 0.5 * (self.X[a] + self.X[b] + R)
                 midb = 0.5 * (self.X[a] + self.X[b] - R)
-                if self.textures is not None:
-                   texa = self.textures[a]
-                   texb = self.textures[b]
-                else:
-                   texa = texb = 'ase3'
+
                 w('cylinder {%s, %s, RHbond texture{tetrah}}\n' % (
                    pa(self.X[a]), pa(mida)))
                 w('cylinder {%s, %s, RHbond texture{tetrah}}\n' % (
