@@ -1,0 +1,43 @@
+#!/usr/bin/python2
+from sys import argv,stdout
+from pprint import pprint
+import os
+import svgwrite as svg
+from PIL import Image
+
+
+def get_filepaths(directory,mask=""):
+    """
+    This function will generate the file names in a directory 
+    tree by walking the tree either top-down or bottom-up. For each 
+    directory in the tree rooted at directory top (including top itself), 
+    it yields a 3-tuple (dirpath, dirnames, filenames).
+    """
+    file_paths = []  # List which will store all of the full filepaths.
+
+    # Walk the tree.
+    for root, directories, files in os.walk(directory):
+        for filename in files:
+            # Join the two strings in order to form the full filepath.
+            filepath = os.path.join(root, filename)
+            if (len(mask)==0 or (len(mask)>0 and filepath.endswith(mask))):
+                file_paths.append(filepath)  # Add it to the list.
+
+    return file_paths  # Self-explanatory.
+
+files=get_filepaths("./",".png")
+
+for pngfile in files:
+    pprint(pngfile)
+    im=Image.open(pngfile)
+    pprint(im.size)
+    
+    fsplit=pngfile.split('.')
+    fsplit.pop()
+    fprefix=".".join(fsplit)
+    pprint(fprefix)
+    svgs=["%dpx"%s for s in im.size]
+    pprint(svgs)
+    dwg = svg.Drawing(fprefix+'.svg',size=tuple(svgs))
+    dwg.add(svg.image.Image(pngfile))
+    dwg.save()
