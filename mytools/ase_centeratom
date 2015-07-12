@@ -22,7 +22,8 @@ def align(struct):
 
 def translate(struct,dx,dy):
 	struct.translate([dx,dy,0])
-	align(struct)
+	struct.wrap()
+	#align(struct)
 
 
 if (len(argv)!=2):
@@ -51,7 +52,8 @@ else:
 		translate(struct,move[0],move[1])
 	elif (len(move)==3):
 		struct.translate(move)
-		align(struct)
+		struct.wrap()
+		#align(struct)
 	view(struct);
 	write_vasp(filename+"tr",struct,label='hexa5Na',direct=True,sort="zsort",vasp5=True)
 	
