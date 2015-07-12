@@ -346,15 +346,14 @@ class POVRAY(EPS):
                 offset = (0, 0, 0)
             else:
                 a, b, offset = pair
-            if (self.numbers[a]==8 and self.numbers[b]==8):
-                R = np.dot(offset, self.A)
-                mida = 0.5 * (self.X[a] + self.X[b] + R)
-                midb = 0.5 * (self.X[a] + self.X[b] - R)
+            R = np.dot(offset, self.A)
+            mida = 0.5 * (self.X[a] + self.X[b] + R)
+            midb = 0.5 * (self.X[a] + self.X[b] - R)
 
-                w('cylinder {%s, %s, RHbond texture{tetrah}}\n' % (
-                   pa(self.X[a]), pa(mida)))
-                w('cylinder {%s, %s, RHbond texture{tetrah}}\n' % (
-                   pa(self.X[b]), pa(midb)))
+            w('cylinder {%s, %s, RHbond texture{tetrah}}\n' % (
+              pa(self.X[a]), pa(mida)))
+            w('cylinder {%s, %s, RHbond texture{tetrah}}\n' % (
+              pa(self.X[b]), pa(midb)))
             
         # Draw constraints if requested
         if self.exportconstraints:
