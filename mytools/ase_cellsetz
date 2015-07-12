@@ -4,7 +4,7 @@ from sys import argv,stdout
 
 if (len(argv) ==3):
 	zlen=float(argv[2]);
-	outfile=argv[1]+".zlim"
+	outfile=argv[1]+"z"+argv[2]
 	struct=read_vasp(argv[1])
 
 	struct.cell[2,2]=zlen;

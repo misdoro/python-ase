@@ -6,11 +6,11 @@ from sys import argv,stdout
 
 if (len(argv)>1):
 	filename=argv[1]
-	outfile=path.join(path.split(filename)[0],"adsonly.POSCAR")
+	outfile=filename+".ads"
 else:
 	filename="CONTCAR"
 	outfile="adsorbate.POSCAR"
-	stdout.write("Usage: cut_adsorbate struct.POSCAR zcoord\n zcoord<0: cut above |zcoord|\n")
+stdout.write("Usage: cut_adsorbate struct.POSCAR zcoord\n zcoord<0: cut above |zcoord|\n")
 
 
 slab=read_vasp(filename)
