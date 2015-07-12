@@ -3,7 +3,6 @@ from ase.io.vasp import read_vasp
 from sys import argv
 from sys import stdout
 from optparse import OptionParser
-import vasputil.supercell as vuscell
 import numpy as np
 import collections
 
@@ -84,7 +83,7 @@ if(options.short):
 	exit(0);
 
 #Find other atoms distances, sort by symbol, distance
-distances=[]
+#distances=[]
 symbols=struct.get_chemical_symbols()
 coords=struct.get_positions()
 
@@ -93,8 +92,9 @@ asyms=set(symbols)
 
 asord=dict()
 
-for i in range(natoms):
-	distances.append(vuscell.atoms_distance(struct,aindex,i))
+distances=struct.get_distances(aindex,range(natoms),mic=True)
+#for i in range(natoms):#
+#	distances.append(vuscell.atoms_distance(struct,aindex,i))
 	
 stdout.write("Distances to closest SLAB atoms by atom:\n")
 for atom in asyms:
